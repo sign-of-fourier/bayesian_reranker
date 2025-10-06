@@ -1,0 +1,6 @@
+openai
+azure-core
+azure-ai-inference
+more_itertools
+rake_nltk
+rapidfuzz
