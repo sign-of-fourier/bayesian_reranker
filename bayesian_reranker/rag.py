@@ -13,7 +13,7 @@ import string
 import asyncio
 import re
 import os
-from bayesian_reranker import webpages, css
+from bayesian_reranker import webpages
 
 
 app = Flask(__name__, static_folder='data')
