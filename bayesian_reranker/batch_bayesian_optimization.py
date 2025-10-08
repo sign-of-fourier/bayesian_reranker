@@ -32,7 +32,26 @@ def x_relevance(answer):
         print(answer)
         return -1
 
+
+
 def get_embedding(text):
+    embed_model_name = "embed-v-4-0"
+
+    client = EmbeddingsClient(
+        endpoint=os.environ['EMBED_ENDPOINT'],
+        credential=AzureKeyCredential(os.environ['EMBED_KEY'])
+    )
+    response = client.embed(
+        input = text,
+        model=embed_model_name
+    )
+
+    print(response.usage)
+
+    return [e.embedding for e in response.data]
+
+
+async def async_get_embedding(text):
     embed_model_name = "embed-v-4-0"
 
     client = EmbeddingsClient(
@@ -102,9 +121,7 @@ class best_batch_finder:
             self.batch_idx.append(batch)
             m, s = self.gpr.predict([rollout_embeddings[i] for i in batch], return_cov=True)
             self.batch_mu.append(','.join([str(x) for x in m]))
-            sigma = []
-            for x in s:
-                sigma.append(','.join([str(y) for y in x]))
+            sigma = [','.join([str(y) for y in x]) for x in s]
             self.batch_sigma.append(';'.join(sigma))
         
         
@@ -113,7 +130,7 @@ class best_batch_finder:
             if gpu:
                 url = f'http://34.130.49.1:5000/gpu_qei?y_best={self.y_best}&n={self.batch_size}'
             else:
-                url = f'https://boaz.onrender.com/qei?y_best={self.y_best}&n={self.batch_size}'
+                url = f'https://boaz.onrender.com/qei'
             data = {'k': ';'.join(self.batch_mu),
                     'sigma': '|'.join(self.batch_sigma)}
             response = requests.post(url, json.dumps(data))
@@ -132,6 +149,9 @@ class best_batch_finder:
             
 
 
+
+
+
 def call_gpt(p):
     messages = [{"role": "system", "content": p['system'],
                  "role": "user", "content": p['user']}]
@@ -144,5 +164,23 @@ def call_gpt(p):
             model='gpt-4o',
             messages = messages
             )
+    return response.choices[0].message.content
+
+
+async def async_call_gpt(p):
+    messages = [{"role": "system", "content": p['system'],
+                 "role": "user", "content": p['user']}]
+    azure_client = openai.AzureOpenAI(
+            api_key=os.environ['AZURE_OPENAI_KEY'],
+            api_version="2024-10-21",
+            azure_endpoint = os.environ['AZURE_ENDPOINT']
+            )
+    response = azure_client.chat.completions.create(
+            model='gpt-4o',
+            messages = messages
+           )
+    path = '/tmp/'+p['session_id'] + '.' + str(p['id'])
+    with open(path, 'w') as f:
+        f.write(response.choices[0].message.content)
     return response.choices[0].message.content
     
