@@ -1,3 +1,4 @@
+gunicorn
 openai
 azure-core
 azure-ai-inference
