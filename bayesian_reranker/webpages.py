@@ -2,23 +2,7 @@
 
 navbar = """
 
-<title>Promptimizer by Quante Carlo</title>
-<div class="header">
-    <p align="right">
-    <table>
-        <tr><td><h1>Promptimizer</h1></td>
-            <td> &nbsp; &nbsp; &nbsp; &nbsp; </td><td rowspan=2>
-            <img src="https://static.wixstatic.com/media/614008_6006e77a45db4c8ea97da77bc26cca7c~mv2.jpg/v1/fill/w_123,h_123,al_c,q_80,usm_0.66_1.00_0.01,enc_auto/qc%20logo.jpg"></img></p>
-            </td>
-        </tr>
-        <tr><td align="right">by Quante Carlo</td><td> &nbsp; </td>
-        </tr>
-    </table>
-    </p>
-</div>
-
-
-
+<title>Bayesian Reranker by Quante Carlo</title>
 <div class="navbar">
 
     <a href="/">Home</a>
@@ -44,6 +28,24 @@ navbar = """
     </div>
     <a href="/settings">Settings</a>
 </div>
+
+
+
+
+<div class="header">
+    <p align="right">
+    <table>
+        <tr><td><h1>Bayesian Reranker</h1></td>
+            <td> &nbsp; &nbsp; &nbsp; &nbsp; </td><td rowspan=2>
+            <img src="https://static.wixstatic.com/media/614008_6006e77a45db4c8ea97da77bc26cca7c~mv2.jpg/v1/fill/w_123,h_123,al_c,q_80,usm_0.66_1.00_0.01,enc_auto/qc%20logo.jpg"></img></p>
+            </td>
+        </tr>
+        <tr><td align="right">by Quante Carlo</td><td> &nbsp; </td>
+        </tr>
+    </table>
+    </p>
+</div>
+
 
 
 """
@@ -213,16 +215,19 @@ body {
 }
 .column.left {
   background-color: aliceblue;
-  width: 25%;
+  width: 15%;
   height: 500px;
   overflow: auto;
 }
 .column.middle {
   /*border: 1px solid black;*/
-  width: 70%;
+  width: 80%;
   /*background-color: cornsilk;*/
   height: 500px;
   overflow: auto;
+  border-radius: 10px;
+  box-shadow: 4px 8px 16px rgba(0, 0, 0, 0.15);
+
   /*border-radius: 30px;*/
 }
 .column.half {
@@ -338,7 +343,7 @@ home="""
 <div class="column left"></div>
 <div class="column middle">
 <form action="/improve_question" method=POST>
-<textarea name=query rows=2 size=100></textarea>
+<textarea name=query rows=5 cols=130>Tell me about wolves in Europe.</textarea>
 <input type=submit name=submit>
 </form>
 <p id="output"></p>
@@ -346,22 +351,24 @@ home="""
 <div class="column right"></div>
 """
 
-bayesian_optimization = """
+optimization_page = """
 {}
 <body>
 {}
-<div class="column left"></div>
+<div class="column row"> &nbsp; </div>
+<div class="column left">{}</div>
 <div class="column middle">
 <table>
     <form action="/optimize" method=POST>
-    <tr>Improved Question<td></td><td> {} <input type=hidden name=improved_question value="{}" columns=100></td></tr>
-    <tr><td>search terms</td><td>{}</td></tr>
+    <tr><td>Improved Question</td><td> {} <input type=hidden name=improved_question value="{}"></td></tr>
+    <tr><td>{}</td><td>{}</td></tr>
     {}
 
     <tr><td></td><td><input type=submit></td></tr>
 </form>
 </table>
 </div>
+{}
 <div class = "column right"></div>
 """
 
