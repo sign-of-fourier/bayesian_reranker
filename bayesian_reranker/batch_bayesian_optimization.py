@@ -10,6 +10,7 @@ import numpy as np
 import requests
 import json
 import random
+import pickle
 
 def x_relevance(answer):
     try:
@@ -47,11 +48,10 @@ def get_embedding(text):
     )
 
     print(response.usage)
-
+   
     return [e.embedding for e in response.data]
 
-
-async def async_get_embedding(text):
+async def async_get_embedding(idx, session_id, text):
     embed_model_name = "embed-v-4-0"
 
     client = EmbeddingsClient(
@@ -63,10 +63,10 @@ async def async_get_embedding(text):
         model=embed_model_name
     )
     
-    print(response.usage)
-    
-    return [e.embedding for e in response.data]
-    
+    with open(f'/tmp/{session_id}.{idx}', 'wb') as f:
+        pickle.dump([e.embedding for e in response.data], f)
+   
+    return response.usage
 
 
 class best_batch_finder:
@@ -101,6 +101,7 @@ class best_batch_finder:
         self.gpr.fit(scored_embeddings, transformed_scores)
         self.y_best = max(transformed_scores)
         self.mu, self.sigma = self.gpr.predict(unscored_embeddings, return_cov=True)
+
         return index2id, unscored_embeddings
         
     def create_batches(self, rollout_embeddings):

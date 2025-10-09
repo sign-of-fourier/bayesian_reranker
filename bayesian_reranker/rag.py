@@ -13,43 +13,27 @@ import string
 import asyncio
 import re
 import os
-from bayesian_reranker import webpages
+from bayesian_reranker import webpages as wp
 
 
 app = Flask(__name__, static_folder='data')
 
 
 
-home="""
-<form action="/improve_question" method=POST>
-<textarea name=query rows=2 size=100></textarea>
-<input type=submit name=submit>
-</form>
-<p id="output"></p>
-"""
-
-bayesian_optimization = """
-<table> 
-    <form action="/optimize" method=POST>
-    <tr>Improved Question<td></td><td><input type=text name=improved_question value="{}" columns=100></td></tr>
-    <tr><td>search terms</td><td>{}</td></tr>
-    {}
-    
-    <tr><td></td><td><input type=submit></td></tr>
-</form>
-</table>
-"""
 
 
 hidden = "<input type=hidden name=\"{}\" value=\"{}\"></input>\n"
 
 #@app.route(["/search_chorma", "/bayes_optimization"], methods=['POST'])
 
-
+def make_sidebar(K):
+    sidebar = '<table>'
+    for k in K.keys():
+        sidebar += "<tr><td>{}</td><td>{}</td></tr>".format(k, K[k])
+    return sidebar + "</table>"
 
 @app.route("/optimize", methods=['POST'])
 def optimize():
-    print(request.form['session_id'])
     path = '/tmp/' + request.form['session_id']
     with open(path + '.mbd','rb') as f:
         combined_embeddings = pickle.load(f)
@@ -70,9 +54,10 @@ def optimize():
             best_idx = B.get_best_batch()
         except Exception as e:
             print(str(e))
-            best_idx = random.randint(0, len(unscored_embeddings)-1)
+            best_idx = random.randint(0, len(B.batch_idx)-1)
         print('looping')
         loop = asyncio.new_event_loop()
+        print(len(unscored_embeddings), len(B.batch_idx), best_idx)
 
         parameters = [{'id': i, 'session_id': request.form['session_id'],
                        'system': "You are a librarian. Your job is to determine if a reference is relevant to a query",
@@ -85,9 +70,7 @@ def optimize():
         for t in range(len(B.batch_idx[best_idx])):
             with open('/tmp/' + request.form['session_id'] + f'.{t}', 'r') as f:
                 answers.append(f.read())
- #       for k, q in zip(keys, [bbo.x_relevance(a) for a in tasks]):
- #           if q > 0:
- #               scored_answers[k] = q
+        
 
     else:
         scored_answers = {}
@@ -102,13 +85,6 @@ def optimize():
             scored_answers[k] = q
         else:
             print(q, t)
-
-
-
-#        Q = [bbo.x_relevance(a) for a in answer]
-#        for k, q in zip(initial_sample, Q):
-#            if q > 0:
-#                scored_answers[k] = q
 
     df = pd.DataFrame({'id': [s for s in scored_answers.keys()],
                        'score': [scored_answers[s] for s in scored_answers.keys()]})
@@ -125,10 +101,12 @@ def optimize():
     with open(path + '.scr', 'wb') as f:
         pickle.dump(scored_answers, f)
 
-
-    return webpages.bayesian_optimization.format(webpages.style, webpages.navbar, re.sub("\"", "", request.form['improved_question']), 
-                                                 re.sub("\n", "<br>\n", request.form['improved_question']),
-                                                 re.sub("\n", "<br>\n", final_answer), hidden.format('session_id', request.form['session_id']))
+    sidebar = make_sidebar({'scored_answers': len(scored_answers.keys()),
+                            'total answers': len(combined_embeddings.keys())})
+    return wp.optimization_page.format(wp.style, wp.navbar, sidebar, re.sub("\n", "\n<br>", request.form['improved_question']), 
+                                       re.sub("\"", "", request.form['improved_question']),
+                                       'Answer', re.sub("\n", "<br>\n", final_answer), 
+                                       hidden.format('session_id', request.form['session_id']), wp.script)
 
 
 #    return str(scored_answers)
@@ -161,20 +139,23 @@ def improve_question():
         for x, y in zip(i, d):
             S[x] = y
     n = len(S.keys())
+    n_pairs = round((n**2-n)/2)
     print("Number of possible pairs of selctions", round((n**2-n)/2))
-    
+    print(n, n_pairs)
+
     J = {}
     ct = 0
     K = S.keys()
     for i, p in enumerate(K):
         for j, q in enumerate(K):
             if j > i:
+            #    print(f'{p}_{q}')
                 J[f'{p}_{q}'] = f"page {p}:\n" + S[p] + f"\n\npage {q}:\n" + S[q]
                 ct +=1
+    print(len(K), ct)
 
     singles = bbo.get_embedding([S[k] for k in K])
-
-
+    
     session_id = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
     MBED = []
     text_pairs = [J[k] for k in J.keys()]
@@ -184,35 +165,42 @@ def improve_question():
 
     loop = asyncio.new_event_loop()
     #tasks = [loop.create_task(ops.get_azure_embeddings(p)) for p in paths]
-    tasks = [loop.create_task(bbo.async_get_embedding(e)) for e in more_itertools.batched(text_pairs, 50)]
+    tasks = [loop.create_task(bbo.async_get_embedding(i, session_id, e)) for i, e in enumerate(more_itertools.batched(text_pairs, 50))]
     loop.run_until_complete(asyncio.wait(tasks))
     loop.close()
 
+    for e in range(len(tasks)):
+        with open(f'/tmp/{session_id}.{e}', 'rb') as f:
+            MBED += pickle.load(f)
 
-    print('finished')
     combined_embeddings = {}
     combined_text = {}
     for k, s in zip(S.keys(), singles):
         combined_embeddings[k] = s
         combined_text[k] = S[k]
-    pair_embeddings = {}
+    
     for k, s in zip(J.keys(),  MBED):
         combined_embeddings[k] = s
         combined_text[k] = J[k]
 
-    for e in tasks:
-        MBED += e
+
+
     with open(f'/tmp/{session_id}.mbd', 'wb') as f:
         pickle.dump(combined_embeddings, f)
     with open(f'/tmp/{session_id}.text', 'wb') as f:
         pickle.dump(combined_text, f)
 
-    return bayesian_optimization.format(re.sub("\"", "", improved_question), re.sub("\n", "\n<br>", improved_question), 
-                                        search_terms, hidden.format('session_id', session_id))
+    sidebar = make_sidebar({'Number of possible pairs': n_pairs,
+                            'singles': len(S.keys()),
+                            'combined': len(J.keys())})
+
+    return wp.optimization_page.format(wp.style, wp.navbar,
+                                       sidebar,re.sub("\n", "<br>\n", improved_question), re.sub("\"", "", improved_question), 
+                                       'search terms', search_terms, hidden.format('session_id', session_id), wp.script)
 
 @app.route("/")
 def welcome():
-    return webpages.home.format(webpages.style, webpages.navbar)
+    return wp.home.format(wp.style, wp.navbar)
 
 
 
