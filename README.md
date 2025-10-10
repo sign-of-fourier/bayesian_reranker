@@ -9,3 +9,10 @@ This demo shows how to scale an LLM reranker for cross-hop reasoning using batch
 5. **Evaluate Initial Random Sample** - Select some random samples and evaluate pointwise. This can also be done pairwise.
 6. **Bayesian Optimization** - Use the results to create Quante Carlo's optimal batch calculator: this is the optimal retreivals to evaluate in parallel.
 7. **Evaluate Next Retreivals** - Evaluate retreivals and answer iteratively, using the Bayesian optimizater until the answer is satsifactory.
+
+
+## Build your own
+- This comes with a server and you can make your own changes. You will need credentials (of course) for your AI backend.
+- For the massively parallel part you will need the [Bayesian batch finder.](https://rapidapi.com/info-FLGers_gH/api/batch-bayesian-optimization)
+- contact me with questions info@quantecarlo.com
+

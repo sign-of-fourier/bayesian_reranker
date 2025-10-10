@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='bayesian_reranker',
-      version='0.1.5',
+      version='0.1.7',
       description='Parallel LLM reranker.',
       url='https://quantecarlo.com',
       author='sign-of-fourier',

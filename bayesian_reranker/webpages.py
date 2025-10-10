@@ -6,27 +6,15 @@ navbar = """
 <div class="navbar">
 
     <a href="/">Home</a>
-    <a href="/signup">Sign Up!</a>
-    <a href='/buy_credits'>Buy Credits</a>
     <div class="subnav">
-        <button class="subnavbtn">User Library</a><i class="fa fa-caret-down"></i></button>
+        <button class="subnavbtn">How it works</a><i class="fa fa-caret-down"></i></button>
         <div class="subnav-content">
-            <a href="/view_prompts">Load Prompt</a>
-            <a href="/view_jobs"> Load Job</a>
+            <a href="https://medium.com/@markshipman4273/the-best-rerankers-24d9582c3495">Retrieval as a Bayesian Optimization Problem</a>
         </div>
     </div>
+    <a href='https://github.com/sign-of-fourier/bayesian_reranker'>Build your own</a>
+    <a href='https://www.quantecarlo.com/get-started'>Contact us</a>
 
-    <div class="subnav">
-
-        <button class="subnavbtn">Documentation</a><i class="fa fa-caret-down"></i></button>
-        <div class="subnav-content">
-            <a href="/how-it-works">How it works</a>
-            <a href="/rag">How to prepare RAG</a>
-            <a href="https://quantecarlo.com">Quante Carlo</a>
-            <a href="/blog">Blog</a>
-        </div>
-    </div>
-    <a href="/settings">Settings</a>
 </div>
 
 
@@ -49,7 +37,6 @@ navbar = """
 
 
 """
-
 
 
 
@@ -340,13 +327,46 @@ home="""
 {}
 <body>
 {}
+
 <div class="column left"></div>
 <div class="column middle">
-<form action="/improve_question" method=POST>
-<textarea name=query rows=5 cols=130>Tell me about wolves in Europe.</textarea>
-<input type=submit name=submit>
-</form>
-<p id="output"></p>
+
+    <table>
+        <tr>
+            <td> <h3>This demo uses Parallel Bayesian Optimization to increase context at each iteration for RAG using the miniwiki 
+            <a href="https://huggingface.co/datasets/rag-datasets/rag-mini-wikipedia">dataset</a>. </h3></td>
+        </tr>
+        <tr><td> &nbsp; </td></tr>
+        <tr>
+            <td><form action="/improve_question" method=POST>
+                 <textarea name=query rows=5 cols=100>Tell me about wolves in Europe.</textarea>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                 <input type=submit name=submit>
+            </td>
+        </tr>
+        </form>
+        <tr>
+            <td><hr></td>
+        </tr>
+        <tr>
+            <td>
+            <h4>How it works</h4>
+            <ol>
+                <b>First screen:</b>
+                <li> Rewrites your prompt</li>
+                <li> Comes up with search terms based on the improved prompt</li>
+                <li> Performs an embedding based search (chroma db) based on the more detailed search terms</li>
+                <b>Second screen:</b>
+                <li> On the first iteration, the best few based on the embedding search are chosen<br>
+                There is an llm scorer in the background that rates the relevance, reliability and recenty of the retrieved documents.</li>
+                <li> For each iteration after that, batch Bayesian Optimization is performed to decide what are the next best choices based on what's been learned about the retrieval's so far.</li>
+            </ol>
+            </td>
+        </tr>
+    </table>
 </div>
 <div class="column right"></div>
 """

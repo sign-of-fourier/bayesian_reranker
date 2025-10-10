@@ -55,30 +55,24 @@ def optimize():
         except Exception as e:
             print(str(e))
             best_idx = random.randint(0, len(B.batch_idx)-1)
-        print('looping')
-        loop = asyncio.new_event_loop()
-        print(len(unscored_embeddings), len(B.batch_idx), best_idx)
-
-        parameters = [{'id': i, 'session_id': request.form['session_id'],
-                       'system': "You are a librarian. Your job is to determine if a reference is relevant to a query",
-                       'user': wd.relevance_prompt.format(request.form['improved_question'], combined_text[x2id[s]])} for i,s in enumerate(B.batch_idx[best_idx])]
-        tasks = [loop.create_task(bbo.async_call_gpt(p)) for p in parameters]
-        loop.run_until_complete(asyncio.wait(tasks))
-        loop.close()
-        answers = []
-        keys = [x2id[k] for k in B.batch_idx[best_idx]]
-        for t in range(len(B.batch_idx[best_idx])):
-            with open('/tmp/' + request.form['session_id'] + f'.{t}', 'r') as f:
-                answers.append(f.read())
         
-
+        keys = [x2id[s] for s in B.batch_idx[best_idx]]
     else:
         scored_answers = {}
         keys = random.sample([s for s in combined_text.keys()], 10)
-        answers = [bbo.call_gpt({'system': "You are a librarian. Your job is to determine if a reference is relevant to a query",
-                                 'user': wd.relevance_prompt.format(request.form['improved_question'], combined_text[s])}) for s in keys]
 
-    
+    parameters = [{'id': i, 'session_id': request.form['session_id'],
+                   'system': "You are a librarian. Your job is to determine if a reference is relevant to a query",
+                   'user': wd.relevance_prompt.format(request.form['improved_question'], combined_text[s])} for i,s in enumerate(keys)]
+
+    loop = asyncio.new_event_loop()
+    tasks = [loop.create_task(bbo.async_call_gpt(p)) for p in parameters]
+    loop.run_until_complete(asyncio.wait(tasks))
+    loop.close()
+    answers = []
+    for t in range(len(keys)):
+        with open('/tmp/' + request.form['session_id'] + f'.{t}', 'r') as f:
+            answers.append(f.read())
 
     for k, q, t in zip(keys, [bbo.x_relevance(a) for a in answers], answers):
         if q > 0:
@@ -107,11 +101,6 @@ def optimize():
                                        re.sub("\"", "", request.form['improved_question']),
                                        'Answer', re.sub("\n", "<br>\n", final_answer), 
                                        hidden.format('session_id', request.form['session_id']), wp.script)
-
-
-#    return str(scored_answers)
-
-
 
 @app.route("/improve_question", methods=['POST'])
 def improve_question():
@@ -201,6 +190,10 @@ def improve_question():
 @app.route("/")
 def welcome():
     return wp.home.format(wp.style, wp.navbar)
+
+
+
+
 
 
 
