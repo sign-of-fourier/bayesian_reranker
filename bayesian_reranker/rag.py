@@ -14,17 +14,15 @@ import asyncio
 import re
 import os
 from bayesian_reranker import webpages as wp
-
+from bayesian_reranker import s3
+import json
 
 app = Flask(__name__, static_folder='data')
-
-
-
-
 
 hidden = "<input type=hidden name=\"{}\" value=\"{}\"></input>\n"
 
 #@app.route(["/search_chorma", "/bayes_optimization"], methods=['POST'])
+
 
 def make_sidebar(K):
     sidebar = '<table>'
@@ -34,18 +32,21 @@ def make_sidebar(K):
 
 @app.route("/optimize", methods=['POST'])
 def optimize():
-    path = '/tmp/' + request.form['session_id']
-    with open(path + '.mbd','rb') as f:
-        combined_embeddings = pickle.load(f)
+    
+    #path = '/tmp/' + request.form['session_id']
+    #with open(path + '.mbd','rb') as f:
+    #    combined_embeddings = pickle.load(f)
+    combined_embeddings = json.loads(s3.get('bayesian_reranker/'+request.form['session_id']+'.mbd'))
+    combined_text = json.loads(s3.get('bayesian_reranker/'+request.form['session_id']+'.text'))
+    #with open(path + '.text','rb') as f:
+    #    combined_text = pickle.load(f)
+    #files = os.listdir('/tmp')
+    scored_answers = json.loads(s3.get('bayesian_reranker/' + request.form['session_id'] + '.scr'))
 
-    with open(path + '.text','rb') as f:
-        combined_text = pickle.load(f)
-    files = os.listdir('/tmp')
+    if len(scored_answers.keys()) > 2:
 
-    if request.form['session_id'] + '.scr' in files:
-
-        with open(path + '.scr', 'rb') as f:
-            scored_answers = pickle.load(f)
+        #with open(path + '.scr', 'rb') as f:
+        #    scored_answers = pickle.load(f)
 
         B = bbo.best_batch_finder(400, 4)
         x2id, unscored_embeddings = B.fit(scored_answers, combined_embeddings)
@@ -58,7 +59,7 @@ def optimize():
         
         keys = [x2id[s] for s in B.batch_idx[best_idx]]
     else:
-        scored_answers = {}
+        #scored_answers = {}
         keys = random.sample([s for s in combined_text.keys()], 10)
 
     parameters = [{'id': i, 'session_id': request.form['session_id'],
@@ -71,8 +72,9 @@ def optimize():
     loop.close()
     answers = []
     for t in range(len(keys)):
-        with open('/tmp/' + request.form['session_id'] + f'.{t}', 'r') as f:
-            answers.append(f.read())
+        answers.append(s3.get('bayesian_reranker/tmp/' + request.form['session_id'] + f'.{t}'))
+        #with open('/tmp/' + request.form['session_id'] + f'.{t}', 'r') as f:
+        #    answers.append(f.read())
 
     for k, q, t in zip(keys, [bbo.x_relevance(a) for a in answers], answers):
         if q > 0:
@@ -91,9 +93,9 @@ def optimize():
                                   'user': wd.rag.format(request.form['improved_question'], references)})
 
     print(df)
-
-    with open(path + '.scr', 'wb') as f:
-        pickle.dump(scored_answers, f)
+    s3.put('bayesian_reranker/' + request.form['session_id'] + '.scr', json.dumps(scored_answers))
+    #with open(path + '.scr', 'wb') as f:
+    #    pickle.dump(scored_answers, f)
 
     sidebar = make_sidebar({'scored_answers': len(scored_answers.keys()),
                             'total answers': len(combined_embeddings.keys())})
@@ -102,11 +104,13 @@ def optimize():
                                        'Answer', re.sub("\n", "<br>\n", final_answer), 
                                        hidden.format('session_id', request.form['session_id']), wp.script)
 
+
+
 @app.route("/improve_question", methods=['POST'])
 def improve_question():
     improved_question = bbo.call_gpt({'system': 'You are a filing clerk. Your job is come up wi', 
                                                                           'user':  wd.improve_query + request.form['query']})
-    print(improved_question)
+    #print(improved_question)
     search_terms = bbo.call_gpt({'system': 'You are a filing clerk. Your job is come up with search terms to help find answers to queries', 
                                  'user': wd.search_term_prompt + improved_question})
 
@@ -116,7 +120,7 @@ def improve_question():
     try:
         search_results = collection.query(
             query_texts = eval(search_terms),
-            n_results = 10
+            n_results = int(request.form['n_results'])
         )
     except Exception as e:
         return str(e)
@@ -153,14 +157,21 @@ def improve_question():
     #p.close()
 
     loop = asyncio.new_event_loop()
-    #tasks = [loop.create_task(ops.get_azure_embeddings(p)) for p in paths]
     tasks = [loop.create_task(bbo.async_get_embedding(i, session_id, e)) for i, e in enumerate(more_itertools.batched(text_pairs, 50))]
     loop.run_until_complete(asyncio.wait(tasks))
     loop.close()
-
+    print('done with embeddings')
     for e in range(len(tasks)):
-        with open(f'/tmp/{session_id}.{e}', 'rb') as f:
-            MBED += pickle.load(f)
+        print('attemptoing to get', session_id, e)
+        try:
+            MBED += s3.get(f'bayesian_reranker/tmp/{session_id}.{e}')
+        except Exception as e:
+            print(str(e))
+            print('could not get tmp', session_id, e)
+            print('could have been a model problem')
+
+        #with open(f'/tmp/{session_id}.{e}', 'rb') as f:
+        #    MBED += pickle.load(f)
 
     combined_embeddings = {}
     combined_text = {}
@@ -172,12 +183,15 @@ def improve_question():
         combined_embeddings[k] = s
         combined_text[k] = J[k]
 
+    print('putting', 'bayesian_reranker/{session_id}')
+    s3.put(f'bayesian_reranker/{session_id}.mbd', json.dumps(combined_embeddings))
+    s3.put(f'bayesian_reranker/{session_id}.text', json.dumps(combined_text))
+    s3.put(f'bayesian_reranker/{session_id}.scr', '{}')
 
-
-    with open(f'/tmp/{session_id}.mbd', 'wb') as f:
-        pickle.dump(combined_embeddings, f)
-    with open(f'/tmp/{session_id}.text', 'wb') as f:
-        pickle.dump(combined_text, f)
+    #with open(f'/tmp/{session_id}.mbd', 'wb') as f:
+    #    pickle.dump(combined_embeddings, f)
+    #with open(f'/tmp/{session_id}.text', 'wb') as f:
+    #    pickle.dump(combined_text, f)
 
     sidebar = make_sidebar({'Number of possible pairs': n_pairs,
                             'singles': len(S.keys()),
