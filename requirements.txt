@@ -8,3 +8,4 @@ flask
 requests
 chromadb
 scikit-learn
+boto3
