@@ -331,28 +331,38 @@ home="""
 <div class="column left"></div>
 <div class="column middle">
 
-    <table>
+    <table border=0>
         <tr>
-            <td> <h3>This demo uses Parallel Bayesian Optimization to increase context at each iteration for RAG using the miniwiki 
+            <td colspan=2> <h3>This demo uses Parallel Bayesian Optimization to increase context at each iteration for RAG using the miniwiki 
             <a href="https://huggingface.co/datasets/rag-datasets/rag-mini-wikipedia">dataset</a>. </h3></td>
         </tr>
-        <tr><td> &nbsp; </td></tr>
+        <tr><td colspan=2> &nbsp; </td></tr>
         <tr>
-            <td><form action="/improve_question" method=POST>
-                 <textarea name=query rows=5 cols=100>Tell me about wolves in Europe.</textarea>
+            <td colspan=2><form action="/improve_question" method=POST>
+                 <textarea name=query rows=3 cols=80>Tell me about wolves in Europe.</textarea>
             </td>
         </tr>
         <tr>
-            <td>
-                 <input type=submit name=submit>
-            </td>
+        <td>
+             <input type=submit name=submit>
+        </td>
+
+        <td>Number of results per keyword term to fetch from corpus:
+            &nbsp;
+            <select name="n_results">
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="8">8</option>
+                <option value="10">10</a>
+            </select>
+        </td>
         </tr>
         </form>
         <tr>
-            <td><hr></td>
+            <td colspan=2><hr></td>
         </tr>
         <tr>
-            <td>
+            <td colspan=2>
             <h4>How it works</h4>
             <ol>
                 <b>First screen:</b>
