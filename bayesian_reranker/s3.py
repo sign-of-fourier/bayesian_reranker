@@ -11,10 +11,10 @@ def put(path, body):
         s = s3.put_object(Body=json.dumps(body), Bucket=bucket, Key=path)
     except Exception as e:
         with open('log.file','a') as f:
-            f.write('put failed', path)
+            f.write('put failed' + path)
         return -1
     with open('log.file','a') as f:
-        f.write('success', path)
+        f.write('success ' + path)
     return 1
 
 def get(key):
