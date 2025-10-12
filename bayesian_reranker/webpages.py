@@ -344,7 +344,7 @@ home="""
         </tr>
         <tr>
         <td>
-             <input type=submit name=submit>
+             <input id="submit" type="submit" name="submit" value="improve">
         </td>
 
         <td>Number of results per keyword term to fetch from corpus:
@@ -396,7 +396,7 @@ optimization_page = """
     <tr><td>{}</td><td>{}</td></tr>
     {}
 
-    <tr><td></td><td><input type=submit></td></tr>
+    <tr><td></td><td><input id="submit" type=submit value="optimize"></td></tr>
 </form>
 </table>
 </div>
