@@ -308,7 +308,7 @@ img {
 """
 
 script = """<script>
-document.getElementById('promptimizer_form').addEventListener('submit', function(event) {
+document.getElementById('reranker').addEventListener('submit', function(event) {
   document.getElementById('submit').disabled = true;
   document.getElementById('submit').textContent = 'Submitting...';
   submit();
@@ -338,7 +338,7 @@ home="""
         </tr>
         <tr><td colspan=2> &nbsp; </td></tr>
         <tr>
-            <td colspan=2><form action="/improve_question" method=POST>
+            <td colspan=2><form id="reranker" action="/improve_question" method=POST>
                  <textarea name=query rows=3 cols=80>Tell me about wolves in Europe.</textarea>
             </td>
         </tr>
@@ -379,6 +379,8 @@ home="""
     </table>
 </div>
 <div class="column right"></div>
+{}
+</html>
 """
 
 optimization_page = """
@@ -389,7 +391,7 @@ optimization_page = """
 <div class="column left">{}</div>
 <div class="column middle">
 <table>
-    <form action="/optimize" method=POST>
+    <form id="reranker" action="/optimize" method=POST>
     <tr><td>Improved Question</td><td> {} <input type=hidden name=improved_question value="{}"></td></tr>
     <tr><td>{}</td><td>{}</td></tr>
     {}
