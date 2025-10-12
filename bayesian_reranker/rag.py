@@ -204,7 +204,7 @@ def improve_question():
 
 @app.route("/")
 def welcome():
-    return wp.home.format(wp.style, wp.navbar)
+    return wp.home.format(wp.style, wp.navbar, wp.script)
 
 
 
