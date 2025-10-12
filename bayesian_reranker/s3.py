@@ -13,6 +13,8 @@ def put(path, body):
         with open('log.file','a') as f:
             f.write('put failed', path)
         return -1
+    with open('log.file','a') as f:
+        f.write('success', path)
     return 1
 
 def get(key):
