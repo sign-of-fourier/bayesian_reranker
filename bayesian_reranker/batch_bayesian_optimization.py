@@ -135,7 +135,12 @@ class best_batch_finder:
                 url = f'https://boaz.onrender.com/qei'
             data = {'k': ';'.join(self.batch_mu),
                     'sigma': '|'.join(self.batch_sigma)}
-            response = requests.post(url, json.dumps(data))
+            headers = {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-RapidAPI-Key": os.environ['X_RapidAPI_Key']
+                    }
+            response = requests.post(url, json.dumps(data), headers=headers)
             boaz = eval(response.content.decode('utf-8'))
         except Exception as e:
             print('Bayesian Issues:', e)

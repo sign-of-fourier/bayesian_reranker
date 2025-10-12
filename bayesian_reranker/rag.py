@@ -148,31 +148,27 @@ def improve_question():
                 ct +=1
     print(len(K), ct)
 
-    singles = bbo.get_embedding([S[k] for k in K])
+    try:
+        singles = bbo.get_embedding([S[k] for k in K])
 
-    session_id = dt.now().strftime("%Y-%m-%d") + '/' + ''.join(random.choices(string.ascii_letters + string.digits, k=16))
-    MBED = []
-    text_pairs = [J[k] for k in J.keys()]
-    #p = Pool(int(len(text_pairs)/50))
-    #E = p.map(bbo.get_embedding, more_itertools.batched(text_pairs, 50))
-    #p.close()
+        session_id = dt.now().strftime("%Y-%m-%d") + '/' + ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+        MBED = []
+        text_pairs = [J[k] for k in J.keys()]
 
-    loop = asyncio.new_event_loop()
-    tasks = [loop.create_task(bbo.async_get_embedding(i, session_id, e)) for i, e in enumerate(more_itertools.batched(text_pairs, 50))]
-    loop.run_until_complete(asyncio.wait(tasks))
-    loop.close()
-    print('done with embeddings')
-    for e in range(len(tasks)):
-        print('attempting to get', session_id, e)
+        loop = asyncio.new_event_loop()
+        tasks = [loop.create_task(bbo.async_get_embedding(i, session_id, e)) for i, e in enumerate(more_itertools.batched(text_pairs, 50))]
+        loop.run_until_complete(asyncio.wait(tasks))
+        loop.close()
+
         try:
-            MBED += s3.get(f'bayesian_reranker/tmp/{session_id}/{e}')
+            for e in range(len(tasks)):
+                MBED += s3.get(f'bayesian_reranker/tmp/{session_id}/{e}')
         except Exception as e:
             print(str(e))
             print('could not get tmp', session_id, e)
-            print('could have been a model problem')
 
-        #with open(f'/tmp/{session_id}.{e}', 'rb') as f:
-        #    MBED += pickle.load(f)
+    except Exception as e:
+        return str(e)
 
     combined_embeddings = {}
     combined_text = {}
