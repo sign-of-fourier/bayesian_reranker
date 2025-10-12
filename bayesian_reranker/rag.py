@@ -16,6 +16,7 @@ import os
 from bayesian_reranker import webpages as wp
 from bayesian_reranker import s3
 import json
+from datetime import datetime as dt
 
 app = Flask(__name__, static_folder='data')
 
@@ -148,8 +149,8 @@ def improve_question():
     print(len(K), ct)
 
     singles = bbo.get_embedding([S[k] for k in K])
-    
-    session_id = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+
+    session_id = dt.now().strftime("%Y-%m-%d") + '/' + ''.join(random.choices(string.ascii_letters + string.digits, k=16))
     MBED = []
     text_pairs = [J[k] for k in J.keys()]
     #p = Pool(int(len(text_pairs)/50))
