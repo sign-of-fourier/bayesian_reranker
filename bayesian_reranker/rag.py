@@ -36,12 +36,12 @@ def optimize():
     #path = '/tmp/' + request.form['session_id']
     #with open(path + '.mbd','rb') as f:
     #    combined_embeddings = pickle.load(f)
-    combined_embeddings = json.loads(s3.get('bayesian_reranker/'+request.form['session_id']+'.mbd'))
-    combined_text = json.loads(s3.get('bayesian_reranker/'+request.form['session_id']+'.text'))
+    combined_embeddings = json.loads(s3.get('bayesian_reranker/'+request.form['session_id']+'/mbd'))
+    combined_text = json.loads(s3.get('bayesian_reranker/'+request.form['session_id']+'/text'))
     #with open(path + '.text','rb') as f:
     #    combined_text = pickle.load(f)
     #files = os.listdir('/tmp')
-    scored_answers = json.loads(s3.get('bayesian_reranker/' + request.form['session_id'] + '.scr'))
+    scored_answers = json.loads(s3.get('bayesian_reranker/' + request.form['session_id'] + '/scr'))
 
     if len(scored_answers.keys()) > 2:
 
@@ -72,7 +72,7 @@ def optimize():
     loop.close()
     answers = []
     for t in range(len(keys)):
-        answers.append(s3.get('bayesian_reranker/tmp/' + request.form['session_id'] + f'.{t}'))
+        answers.append(s3.get('bayesian_reranker/tmp/' + request.form['session_id'] + f'/{t}'))
         #with open('/tmp/' + request.form['session_id'] + f'.{t}', 'r') as f:
         #    answers.append(f.read())
 
@@ -93,7 +93,7 @@ def optimize():
                                   'user': wd.rag.format(request.form['improved_question'], references)})
 
     print(df)
-    s3.put('bayesian_reranker/' + request.form['session_id'] + '.scr', json.dumps(scored_answers))
+    s3.put('bayesian_reranker/' + request.form['session_id'] + '/scr', json.dumps(scored_answers))
     #with open(path + '.scr', 'wb') as f:
     #    pickle.dump(scored_answers, f)
 
@@ -162,9 +162,9 @@ def improve_question():
     loop.close()
     print('done with embeddings')
     for e in range(len(tasks)):
-        print('attemptoing to get', session_id, e)
+        print('attempting to get', session_id, e)
         try:
-            MBED += s3.get(f'bayesian_reranker/tmp/{session_id}.{e}')
+            MBED += s3.get(f'bayesian_reranker/tmp/{session_id}/{e}')
         except Exception as e:
             print(str(e))
             print('could not get tmp', session_id, e)
@@ -183,10 +183,10 @@ def improve_question():
         combined_embeddings[k] = s
         combined_text[k] = J[k]
 
-    print('putting', 'bayesian_reranker/{session_id}')
-    s3.put(f'bayesian_reranker/{session_id}.mbd', json.dumps(combined_embeddings))
-    s3.put(f'bayesian_reranker/{session_id}.text', json.dumps(combined_text))
-    s3.put(f'bayesian_reranker/{session_id}.scr', '{}')
+    print('putting', f'bayesian_reranker/{session_id}')
+    s3.put(f'bayesian_reranker/{session_id}/mbd', json.dumps(combined_embeddings))
+    s3.put(f'bayesian_reranker/{session_id}/text', json.dumps(combined_text))
+    s3.put(f'bayesian_reranker/{session_id}/scr', '{}')
 
     #with open(f'/tmp/{session_id}.mbd', 'wb') as f:
     #    pickle.dump(combined_embeddings, f)
