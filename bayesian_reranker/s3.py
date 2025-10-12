@@ -14,7 +14,7 @@ def put(path, body):
             f.write(f"put failed {path}\n")
         return -1
     with open('log.file','a') as f:
-        f.write(f"success {path)\n")
+        f.write(f"success {path}\n")
     return 1
 
 def get(key):
