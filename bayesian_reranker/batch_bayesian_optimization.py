@@ -11,6 +11,7 @@ import requests
 import json
 import random
 import pickle
+from bayesian_reranker import s3
 
 def x_relevance(answer):
     try:
@@ -62,9 +63,9 @@ async def async_get_embedding(idx, session_id, text):
         input = text,
         model=embed_model_name
     )
-    
-    with open(f'/tmp/{session_id}.{idx}', 'wb') as f:
-        pickle.dump([e.embedding for e in response.data], f)
+    s3.put(f'bayesian_reranker/tmp/{session_id}/{idx}', [e.embedding for e in response.data]) 
+    #with open(f'/tmp/{session_id}.{idx}', 'wb') as f:
+    #    pickle.dump([e.embedding for e in response.data], f)
    
     return response.usage
 
@@ -180,8 +181,11 @@ async def async_call_gpt(p):
             model='gpt-4o',
             messages = messages
            )
-    path = '/tmp/'+p['session_id'] + '.' + str(p['id'])
-    with open(path, 'w') as f:
-        f.write(response.choices[0].message.content)
+    #path = '/tmp/'+p['session_id'] + '.' + str(p['id'])
+    #with open(path, 'w') as f:
+    #    f.write(response.choices[0].message.content)
+    s3.put('bayesian_reranker/tmp/'+p['session_id'] + '/' + str(p['id']), response.choices[0].message.content)
+
+
     return response.choices[0].message.content
     
