@@ -330,9 +330,9 @@ chooser = """
 <div class="column row"> &nbsp; </div>
 <div class="column left"></div>
 <div class="column middle">
-<table><tr><td><a href="/geomcts">GEO</a></td></tr>
+<table><tr><td><font +1><b>Generateive Engine Optimization:</b> </font><a href="/geomcts">GEO</a></td><td>Uses Monte Carlo Tree Search to write and rewrite articles to increase relevance with respect to Cohere's Reranker.</td></tr>
   <tr><td></td></tr>
-  <tr><td><a href="/reranker">Bayesian Reranker for RAG</a></td></tr>
+  <tr><td><font size=+1><b>Bayesian Reranker for</b></font><a href=\"/reranker\"> RAG</font></a></td><td>Uses parallel Bayesian Optimiation to iteratively, irmprove the retrieval step.</td></tr>
 </table>
 
 </div>
