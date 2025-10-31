@@ -213,7 +213,7 @@ def welcome():
 
 @app.route("/geomcts")
 def geomcts_welcome():
-    return wp.geomcts_home.format(wp.style, wp.navbar.format("Bayesian Reranker", "Bayesian Reranker"), wp.script)
+    return wp.geomcts_home.format(wp.style, wp.navbar.format("GEO MCTS", "GEO MCTS"), wp.script)
 
 
 @app.route("/initialize_drafts", methods=['POST'])
