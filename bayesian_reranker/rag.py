@@ -222,6 +222,7 @@ def first_draft():
     print(request.form['tree_depth'])
     print(request.form['article'])
     print(request.form['n_trees'])
+    
     if request.form['write'] == 'Write':
         Tree = geomcts.initial_Tree(request.form['topic'], int(request.form['tree_depth']))
     else:
@@ -235,7 +236,8 @@ def first_draft():
             hidden.format('session_id', Tree[0].identifier)
     
 
-    return wp.geomcts_iterate.format(wp.style, wp.navbar.format("GEO MCTS", "GEO MCTS"), Tree[0].identifier, Tree[0].text,
+    return wp.geomcts_iterate.format(wp.style, wp.navbar.format("GEO MCTS", "GEO MCTS"), Tree[0].identifier, 
+                                     re.sub("\n", "<br>\n", Tree[0].text),
                                      hidden_input, wp.script)
 
 tworows = "<tr><td>{}</td><td>{}</td></tr>\n"

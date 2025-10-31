@@ -214,7 +214,7 @@ def initial_Tree(topic, n_parallel, starter=None):
         if starter:
             futures = [executor.submit(call_gpt, article_writer.format(topic), .9) for t in range(n_parallel)]
         else: 
-            futures = [executor.submit(call_gpt, article_rewriter.format(topic, article), .9) for t in range(n_parallel)]    
+            futures = [executor.submit(call_gpt, article_rewriter.format(topic, starter), .9) for t in range(n_parallel)]    
         for future in futures:
             articles.append(future.result())
 
