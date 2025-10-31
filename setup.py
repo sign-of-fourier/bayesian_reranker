@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(name='bayesian_reranker',
-      version='0.3.1',
-      description='Parallel LLM reranker.',
+      version='0.3.2',
+      description='Parallel LLM reranker and MCTS for Generative Engine Optimiation (GEO).',
       url='https://quantecarlo.com',
       author='sign-of-fourier',
       author_email='info@quantecarlo.com',

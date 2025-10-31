@@ -83,7 +83,6 @@ def rerank(topic, documents):
           },
         )
     except Exception as e:
-        print(response)
         return json.loads({'x': 'error'})
     
     return response.json()

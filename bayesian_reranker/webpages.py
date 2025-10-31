@@ -330,7 +330,7 @@ chooser = """
 <div class="column row"> &nbsp; </div>
 <div class="column left"></div>
 <div class="column middle">
-<table><tr><td><font +1><b>Generateive Engine Optimization:</b> </font><a href="/geomcts">GEO</a></td><td>Uses Monte Carlo Tree Search to write and rewrite articles to increase relevance with respect to Cohere's Reranker.</td></tr>
+<table><tr><td><font size=+1><b>Generateive Engine Optimization:</b> </font><a href="/geomcts">GEO</a></td><td>Uses Monte Carlo Tree Search to write and rewrite articles to increase relevance with respect to Cohere's Reranker.</td></tr>
   <tr><td></td></tr>
   <tr><td><font size=+1><b>Bayesian Reranker for</b></font><a href=\"/reranker\"> RAG</font></a></td><td>Uses parallel Bayesian Optimiation to iteratively, irmprove the retrieval step.</td></tr>
 </table>
@@ -356,8 +356,7 @@ geomcts_home="""<html>
 
     <table border=0>
         <tr>
-            <td colspan=2> <h3>This demo uses Parallel Bayesian Optimization to increase context at each iteration for RAG using the miniwiki
-            <a href="https://huggingface.co/datasets/rag-datasets/rag-mini-wikipedia">dataset</a>. </h3></td>
+            <td colspan=2> <h3>This demo uses Monte Carlo Tree Search to rewrite articles to optimize relevance.  </h3></td>
         </tr>
         <tr><td colspan=2> &nbsp; </td></tr>
         <tr>
