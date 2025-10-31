@@ -1,4 +1,6 @@
-# Bayesian Reranker
+# Bayesian Optimization applications
+
+## Bayesian Reranker
 This demo shows how to scale an LLM reranker for cross-hop reasoning using batch Bayesian optimization.
 
 ### Steps
@@ -11,8 +13,20 @@ This demo shows how to scale an LLM reranker for cross-hop reasoning using batch
 7. **Evaluate Next Retreivals** - Evaluate retreivals and answer iteratively, using the Bayesian optimizater until the answer is satsifactory.
 
 
-## Build your own
+### Build your own
 - This comes with a server and you can make your own changes. You will need credentials (of course) for your AI backend.
 - For the massively parallel part you will need the [Bayesian batch finder.](https://rapidapi.com/info-FLGers_gH/api/batch-bayesian-optimization)
 - contact me with questions info@quantecarlo.com
+
+## Generative Engine Optimization
+
+This demo shows an application of Monte Carlo Tree Search to the task of Generative Engine Optimiation. 
+The demo begins by either writing starter articles based on the topic or by rewriting an article of your choice.
+
+Parallel Bayesian Optimization using batch Expected Improvement is used to determine which nodes to expand. At each step, a Gaussian Process is fit based on the embeddings of the written text and the output of Cohere's [reranker](https://cohere.com/rerank).
+ Batch Expected Improvement is used to find the best next batch of nodes to expand in parallel. 
+
+
+
+
 
