@@ -1,7 +1,7 @@
 from flask import Flask, Response,send_file, send_from_directory, request, make_response
 import pandas as pd
-import openai
-from azure.core.credentials import AzureKeyCredential
+#import openai
+#from azure.core.credentials import AzureKeyCredential
 import more_itertools
 import chromadb
 import pickle
@@ -17,6 +17,7 @@ from bayesian_reranker import webpages as wp
 from bayesian_reranker import s3
 import json
 from datetime import datetime as dt
+from bayesian_reranker import geomcts
 
 app = Flask(__name__, static_folder='data')
 
@@ -100,7 +101,8 @@ def optimize():
 
     sidebar = make_sidebar({'scored_answers': len(scored_answers.keys()),
                             'total answers': len(combined_embeddings.keys())})
-    return wp.optimization_page.format(wp.style, wp.navbar, sidebar, re.sub("\n", "\n<br>", request.form['improved_question']), 
+    return wp.optimization_page.format(wp.style, wp.navbar.format("Bayesian Reranker", "Bayesian Reranker"), 
+                                       sidebar, re.sub("\n", "\n<br>", request.form['improved_question']), 
                                        re.sub("\"", "", request.form['improved_question']),
                                        'Answer', re.sub("\n", "<br>\n", final_answer), 
                                        hidden.format('session_id', request.form['session_id']), wp.script)
@@ -194,15 +196,79 @@ def improve_question():
                             'singles': len(S.keys()),
                             'combined': len(J.keys())})
 
-    return wp.optimization_page.format(wp.style, wp.navbar,
+    return wp.optimization_page.format(wp.style, wp.navbar.format("Bayesian Reranker", "Bayesian Reranker"),
                                        sidebar,re.sub("\n", "<br>\n", improved_question), re.sub("\"", "", improved_question), 
                                        'search terms', search_terms, hidden.format('session_id', session_id), wp.script)
 
 @app.route("/")
+def chooser():
+    #links = "<table><tr><td><a href=\"/geomcts\">GEO</a></td></tr>\n<tr><td><a href=\"/promptimizer\">Bayesian RAG</a></td></tr></table>\n"
+
+    return wp.chooser.format(wp.style, wp.navbar.format("Bayesian Optimzation", "Bayesian Optimization"))
+
+@app.route("/reranker")
 def welcome():
-    return wp.home.format(wp.style, wp.navbar, wp.script)
+    return wp.home.format(wp.style, wp.navbar.format("Bayesian Reranker", "Bayesian Reranker"), wp.script)
 
 
+@app.route("/geomcts")
+def geomcts_welcome():
+    return wp.geomcts_home.format(wp.style, wp.navbar.format("Bayesian Reranker", "Bayesian Reranker"), wp.script)
+
+
+@app.route("/initialize_drafts", methods=['POST'])
+def first_draft():
+    print(request.form['topic'])
+    print(request.form['tree_depth'])
+    print(request.form['article'])
+    print(request.form['n_trees'])
+    if request.form['write'] == 'Write':
+        Tree = geomcts.initial_Tree(request.form['topic'], int(request.form['tree_depth']))
+    else:
+        Tree = geomcts.initial_Tree(request.form['topic'], int(request.form['tree_depth']), request.form['article'])
+    scores = geomcts.roll_and_rank_tree(Tree, depth=int(request.form['tree_depth']))
+
+    with open('/tmp/' + Tree[0].identifier + '.pkl', 'wb') as f:
+        pickle.dump(Tree, f)
+
+    hidden_input = hidden.format('tree_depth', request.form['tree_depth'])+\
+            hidden.format('session_id', Tree[0].identifier)
+    
+
+    return wp.geomcts_iterate.format(wp.style, wp.navbar.format("GEO MCTS", "GEO MCTS"), Tree[0].identifier, Tree[0].text,
+                                     hidden_input, wp.script)
+
+tworows = "<tr><td>{}</td><td>{}</td></tr>\n"
+@app.route("/geo_mcts", methods=['POST'])
+def geo_iterate():
+    with open('/tmp/' + request.form['session_id'] + '.pkl', 'rb') as f:
+        Tree = pickle.load(f)
+    all_nodes = []
+    for t in Tree:
+        all_nodes += geomcts.get_all(t) 
+    number_of_nodes = len(all_nodes)
+    print("len(all_nodes)", len(all_nodes))
+    if len(all_nodes) < 50:
+        batch_size = 2
+        n_batches = 20
+    else:
+        batch_size = 8
+        n_batches = 1000
+    geomcts.iterate(Tree, batch_size, n_batches, int(request.form['tree_depth']))
+    best, worst = geomcts.best_worst(Tree)
+    
+    with open('/tmp/' + request.form['session_id'] + '.pkl', 'wb') as f:
+        pickle.dump(Tree, f)
+
+
+    hidden_input = hidden.format('tree_depth', request.form['tree_depth'])+\
+            hidden.format('session_id', Tree[0].identifier)
+
+
+    sidebar = '<table>'+tworows.format('Best', best.relevance)+tworows.format('Worst',worst.relevance)+\
+            tworows.format('Number of nodes', number_of_nodes)+'</table>'
+
+    return wp.geomcts_iterate.format(wp.style, wp.navbar.format("GEO MCTS", "GEO MCTS"), sidebar, re.sub("\n", "<br>\n", best.text),  hidden_input, wp.script)
 
 
 

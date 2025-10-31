@@ -9,3 +9,4 @@ requests
 chromadb
 scikit-learn
 boto3
+cohere

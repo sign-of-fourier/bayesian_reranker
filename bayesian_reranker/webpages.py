@@ -2,7 +2,7 @@
 
 navbar = """
 
-<title>Bayesian Reranker by Quante Carlo</title>
+<title>{} by Quante Carlo</title>
 <div class="navbar">
 
     <a href="/">Home</a>
@@ -10,7 +10,9 @@ navbar = """
         <button class="subnavbtn">How it works</a><i class="fa fa-caret-down"></i></button>
         <div class="subnav-content">
             <a href="https://medium.com/@markshipman4273/the-best-rerankers-24d9582c3495">Retrieval as a Bayesian Optimization Problem</a>
+            <a href="https://medium.com/@markshipman4273/">Generative Engine Optimization using Monte Carlo Tree Search</a>
         </div>
+        
     </div>
     <a href='https://github.com/sign-of-fourier/bayesian_reranker'>Build your own</a>
     <a href='https://www.quantecarlo.com/get-started'>Contact us</a>
@@ -23,7 +25,7 @@ navbar = """
 <div class="header">
     <p align="right">
     <table>
-        <tr><td><h1>Bayesian Reranker</h1></td>
+        <tr><td><h1>{}</h1></td>
             <td> &nbsp; &nbsp; &nbsp; &nbsp; </td><td rowspan=2>
             <img src="https://static.wixstatic.com/media/614008_6006e77a45db4c8ea97da77bc26cca7c~mv2.jpg/v1/fill/w_123,h_123,al_c,q_80,usm_0.66_1.00_0.01,enc_auto/qc%20logo.jpg"></img></p>
             </td>
@@ -321,6 +323,144 @@ document.getElementById('reranker').addEventListener('submit', function(event) {
 
 
 
+chooser = """
+{}
+<body>
+{}
+<div class="column row"> &nbsp; </div>
+<div class="column left"></div>
+<div class="column middle">
+<table><tr><td><a href="/geomcts">GEO</a></td></tr>
+  <tr><td></td></tr>
+  <tr><td><a href="/reranker">Bayesian Reranker for RAG</a></td></tr>
+</table>
+
+</div>
+
+<div class = "column right"></div>
+"""
+
+
+
+
+
+
+
+geomcts_home="""<html>
+{}
+<body>
+{}
+
+<div class="column left"></div>
+<div class="column middle">
+
+    <table border=0>
+        <tr>
+            <td colspan=2> <h3>This demo uses Parallel Bayesian Optimization to increase context at each iteration for RAG using the miniwiki
+            <a href="https://huggingface.co/datasets/rag-datasets/rag-mini-wikipedia">dataset</a>. </h3></td>
+        </tr>
+        <tr><td colspan=2> &nbsp; </td></tr>
+        <tr>
+            <td colspan=2><form id="geomcts" action="/initialize_drafts" method=POST>
+                 <textarea name=topic rows=3 cols=80>Describe the athletic differences between football and baseball.</textarea>
+            </td>
+        </tr>
+        <tr>
+            <td colspace=2>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <input id="Rewrite" type="submit" name="write" value="Write"></input>
+            </td>
+            <td>
+            </td>
+        <tr>
+        <tr>
+            <td colspan=2>
+                <textarea name=article rows=4 cols=80>Optional: you can start with your own article but, the topic is still required.</textarea>
+            </td>
+        <tr>
+            <td>
+                <input id="Rewrite" type="submit" name="write" value="Rewrite"></input>
+            </td>
+            <td>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                 Depth of rollout:
+                &nbsp;
+                <select name="tree_depth">
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                    <option value="8">8</option>
+                    <option value="10">10</a>
+               </select>
+
+            </td>
+
+            <td>Number of initial trees:
+                &nbsp;
+                <select name="n_trees">
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                    <option value="8">8</option>
+                    <option value="10">10</a>
+               </select>
+        </td>
+        </tr>
+        </form>
+        <tr>
+            <td colspan=2><hr></td>
+        </tr>
+        <tr>
+            <td colspan=2>
+            <h4>How it works</h4>
+            <ol>
+                <b>Write:</b>
+                <li> Writes stories based on your topic and then looks for a score</li>
+                <li> Performs a roll out: sequentially rewrites the story.</li>
+                <li> Scores eaach story based on Cohere's <a href="https://cohere.com/rerank">reranker </a></li>
+                <li> Uses Bayesian Optimization based on the embeddings of the stories to estimate the best place for a new node.</li>
+                <i>Performs rollouts in parallel </i><br>
+                <b>Rewrite:</b>
+                <li> Same as before but instead of writing from scratch, it starts by rewriting the story you provide.<br>
+            </ol>
+            </td>
+        </tr>
+    </table>
+</div>
+<div class="column right"></div>
+{}
+</html>
+
+
+
+"""
+
+geomcts_iterate = """
+{}
+<body>
+{}
+<div class="column row"> &nbsp; </div>
+<div class="column left">{}</div>
+<div class="column middle">
+<table>
+    <form id="geomcts" action="/geo_mcts" method=POST>
+    
+    {}
+    <tr><td colspan=2>
+    {}
+    </td>
+    <tr><td></td><td><input id="submit" type=submit value="optimize"></td></tr>
+</form>
+</table>
+</div>
+{}
+<div class = "column right"></div>
+"""
+
 
 home="""
 <html>
@@ -408,5 +548,19 @@ optimization_page = """
 hidden = "<input type=hidden name=\"{}\" value=\"{}\"></input>\n"
 
 
-
+quante_carlo = """<html>
+<body>
+<table>
+    <tr>
+        <td><a href="/reranker">Reranker</a></td>
+    </tr>
+    <tr>
+        <td><a href="https://medium.com/@markshipman4273/dspy-is-slow-heres-how-to-make-it-fast-632bd85afb75">DSPy accelerator</a></td>
+    </tr>
+    <tr>
+        <td><a href="https://quantecarlo.com">Quante Carlo</a></td>
+    </tr>
+</table>
+</html>
+"""
 
