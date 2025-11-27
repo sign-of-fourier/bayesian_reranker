@@ -18,6 +18,7 @@ from bayesian_reranker import s3
 import json
 from datetime import datetime as dt
 from bayesian_reranker import geomcts
+import boto3
 
 app = Flask(__name__, static_folder='data')
 
@@ -96,8 +97,6 @@ def optimize():
 
     print(df)
     s3.put('bayesian_reranker/' + request.form['session_id'] + '/scr', json.dumps(scored_answers))
-    #with open(path + '.scr', 'wb') as f:
-    #    pickle.dump(scored_answers, f)
 
     sidebar = make_sidebar({'scored_answers': len(scored_answers.keys()),
                             'total answers': len(combined_embeddings.keys())})
@@ -113,7 +112,6 @@ def optimize():
 def improve_question():
     improved_question = bbo.call_gpt({'system': 'You are a filing clerk. Your job is come up wi', 
                                                                           'user':  wd.improve_query + request.form['query']})
-    #print(improved_question)
     search_terms = bbo.call_gpt({'system': 'You are a filing clerk. Your job is come up with search terms to help find answers to queries', 
                                  'user': wd.search_term_prompt + improved_question})
 
@@ -148,7 +146,6 @@ def improve_question():
             #    print(f'{p}_{q}')
                 J[f'{p}_{q}'] = f"page {p}:\n" + S[p] + f"\n\npage {q}:\n" + S[q]
                 ct +=1
-    print(len(K), ct)
 
     try:
         singles = bbo.get_embedding([S[k] for k in K])
@@ -218,22 +215,30 @@ def geomcts_welcome():
 
 @app.route("/initialize_drafts", methods=['POST'])
 def first_draft():
-    print(request.form['topic'])
-    print(request.form['tree_depth'])
-    print(request.form['article'])
-    print(request.form['n_trees'])
-    
-    if request.form['write'] == 'Write':
+    if request.form['starter'] == 'write':
         Tree = geomcts.initial_Tree(request.form['topic'], int(request.form['tree_depth']))
     else:
         Tree = geomcts.initial_Tree(request.form['topic'], int(request.form['tree_depth']), request.form['article'])
-    scores = geomcts.roll_and_rank_tree(Tree, depth=int(request.form['tree_depth']))
+    
+    Tree = geomcts.roll_and_rank_tree(Tree, depth=int(request.form['tree_depth']))
+    print(len(Tree[0].embedding))
+    print('id', Tree[0].identifier)
+    print(len(Tree[0].children[0].embedding))
+    now = str(dt.now())
 
-    with open('/tmp/' + Tree[0].identifier + '.pkl', 'wb') as f:
-        pickle.dump(Tree, f)
+    key_path = 'geomcts/' + now[:9] + '/' + Tree[0].identifier
+
+    client = boto3.client('s3', aws_access_key_id=os.environ['AWS_ACCESS_KEY'],
+                          aws_secret_access_key=os.environ['AWS_SECRET_KEY'])
+
+    client.put_object(Body=pickle.dumps(Tree),
+                      Bucket=geomcts.bucket, Key=key_path)
+
+    #with open('/tmp/' + Tree[0].identifier + '.pkl', 'wb') as f:
+    #    pickle.dump(Tree, f)
 
     hidden_input = hidden.format('tree_depth', request.form['tree_depth'])+\
-            hidden.format('session_id', Tree[0].identifier)
+            hidden.format('key_path', key_path)
     
 
     return wp.geomcts_iterate.format(wp.style, wp.navbar.format("GEO MCTS", "GEO MCTS"), Tree[0].identifier, 
@@ -241,49 +246,49 @@ def first_draft():
                                      hidden_input, wp.script)
 
 tworows = "<tr><td>{}</td><td>{}</td></tr>\n"
-@app.route("/geo_mcts", methods=['POST'])
+@app.route("/geomcts_iterate", methods=['POST'])
 def geo_iterate():
-    with open('/tmp/' + request.form['session_id'] + '.pkl', 'rb') as f:
-        Tree = pickle.load(f)
+
+    #with open('/tmp/' + request.form['session_id'] + '.pkl', 'rb') as f:
+    #    Tree = pickle.load(f)
+    key_path = request.form['key_path']
+
+    client = boto3.client('s3', aws_access_key_id=os.environ['AWS_ACCESS_KEY'],
+                          aws_secret_access_key=os.environ['AWS_SECRET_KEY'])
+
+    obj = client.get_object(Bucket=geomcts.bucket, Key=key_path)
+    Tree = pickle.loads(obj['Body'].read())
+
+
     all_nodes = []
     for t in Tree:
         all_nodes += geomcts.get_all(t) 
     number_of_nodes = len(all_nodes)
-    print("len(all_nodes)", len(all_nodes))
     if len(all_nodes) < 50:
         batch_size = 2
         n_batches = 20
     else:
         batch_size = 8
         n_batches = 1000
-    geomcts.iterate(Tree, batch_size, n_batches, int(request.form['tree_depth']))
+    Tree, time_spent = geomcts.iterate(Tree, batch_size, n_batches, int(request.form['tree_depth']))
     best, worst = geomcts.best_worst(Tree)
     
-    with open('/tmp/' + request.form['session_id'] + '.pkl', 'wb') as f:
-        pickle.dump(Tree, f)
+    #with open('/tmp/' + request.form['session_id'] + '.pkl', 'wb') as f:
+    #    pickle.dump(Tree, f)
 
+
+    client = boto3.client('s3', aws_access_key_id=os.environ['AWS_ACCESS_KEY'],
+                          aws_secret_access_key=os.environ['AWS_SECRET_KEY'])
+
+    client.put_object(Body=pickle.dumps(Tree),
+                      Bucket=geomcts.bucket, Key=key_path)
 
     hidden_input = hidden.format('tree_depth', request.form['tree_depth'])+\
-            hidden.format('session_id', Tree[0].identifier)
+            hidden.format('key_path', request.form['key_path'])
 
 
     sidebar = '<table>'+tworows.format('Best', best.relevance)+tworows.format('Worst',worst.relevance)+\
-            tworows.format('Number of nodes', number_of_nodes)+'</table>'
+            tworows.format('Number of nodes', number_of_nodes)+tworows.format('Time', time_spent)+'</table>'
+            
 
     return wp.geomcts_iterate.format(wp.style, wp.navbar.format("GEO MCTS", "GEO MCTS"), sidebar, re.sub("\n", "<br>\n", best.text),  hidden_input, wp.script)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

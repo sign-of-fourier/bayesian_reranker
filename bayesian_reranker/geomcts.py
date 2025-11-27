@@ -10,8 +10,11 @@ from scipy.stats import ecdf, lognorm
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import random
+import boto3
+import pickle
 
 
+bucket = 'sagemaker-us-east-2-344400919253'
 
 article_writer = """Write an article on the topic listed bedlow
 
@@ -83,7 +86,7 @@ def rerank(topic, documents):
           },
         )
     except Exception as e:
-        return json.loads({'x': 'error'})
+        return json.loads({'error': str(e)})
     
     return response.json()
 
@@ -113,7 +116,10 @@ class Node:
 
     def get_rollout(self):
         if len(self.children) > 0:
-            return [self.children[0]] + self.children[0].get_rollout()
+            children = []
+            for c in self.children:
+                children += c.get_rollout()
+            return self.children + children
         else:
             return []
         
@@ -125,7 +131,7 @@ class Node:
     
     def get_eligible_nodes(self):
         
-        if (len(self.get_scores()) > 2) & (len(self.children) < 10):
+        if (len(self.get_scores()) > 1) & (len(self.children) < 10):
             eligible = [self]
             for c in self.children:
                 eligible += c.get_eligible_nodes()
@@ -181,7 +187,6 @@ class qEI:
                 url = f'http://34.130.49.1:5000/gpu_qei'
             else:
                 url = f'https://boaz.onrender.com/qei'
-#                url = f'http://3.132.240.115:8080/qei'
             data = {'y_best': str(self.y_best),
                     'n': str(self.batch_size),
                     'k': ';'.join(self.batch_mu),
@@ -205,15 +210,21 @@ class qEI:
                 best_idx = i
         return self.batch_idx[best_idx]
 
-def initial_Tree(topic, n_parallel, starter=None):
+
+from bayesian_reranker.config import create_app
+from celery import shared_task
+
+flask_app = create_app()
+celery_app = flask_app.extensions["celery"]
+
+@shared_task(ignore_result=False) #-Line 4
+def initial_Tree(topic, n_parallel, starter=False):
     articles = []
-
-
     with ThreadPoolExecutor(max_workers=n_parallel) as executor:
         if starter:
-            futures = [executor.submit(call_gpt, article_writer.format(topic), .9) for t in range(n_parallel)]
-        else: 
-            futures = [executor.submit(call_gpt, article_rewriter.format(topic, starter), .9) for t in range(n_parallel)]    
+            futures = [executor.submit(call_gpt, article_rewriter.format(topic, starter), .9) for t in range(n_parallel)]
+        else:
+            futures = [executor.submit(call_gpt, article_writer.format(topic), .9) for t in range(n_parallel)]    
         for future in futures:
             articles.append(future.result())
 
@@ -229,7 +240,6 @@ def initial_Tree(topic, n_parallel, starter=None):
     for t, r in zip(Tree, ranks):
         t.relevance = r
 
-    
     client = openai.OpenAI(api_key=os.environ['OPENAI_KEY'])
 
     #initial embeddings
@@ -239,7 +249,8 @@ def initial_Tree(topic, n_parallel, starter=None):
     ).data
     for t, e in zip(Tree, embeddings):
         t.embedding = e.embedding
-
+    roll_and_rank_tree(Tree, depth=n_parallel)
+    
     return Tree
 
 
@@ -252,8 +263,8 @@ def roll_and_rank(N, n):
     try:
         ranks = [x['relevance_score'] for x in raw_rank['results']]
     except Exception as e:
-        print(e)
-        print(raw_ranks)
+        print('Exception in roll and rank')
+        print(len(rolls))
     for r, n in zip(ranks, rolls):
         n.relevance = r
 
@@ -266,9 +277,7 @@ def roll_and_rank(N, n):
     
     for t, e in zip(rolls, embeddings):
         t.embedding = e.embedding
-        
-
-    return N.relevance
+    return N
 
 def roll_and_rank_tree(Tree, depth):
     results = []
@@ -312,8 +321,26 @@ def expand(N, ix, rollout_depth):
     return N.relevance
 
 
-
 def iterate(Tree, batch_size, n_batches, depth):
+    
+#    client = boto3.client('s3', aws_access_key_id=os.environ['AWS_ACCESS_KEY'],
+#                          aws_secret_access_key=os.environ['AWS_SECRET_KEY'])
+
+#    obj = client.get_object(Bucket=bucket, Key=key_path)
+#    Trees = pickle.load(obj['Body'])
+
+    all_nodes = []
+    for t in Tree:
+        all_nodes += get_all(t)
+
+    number_of_nodes = len(all_nodes)
+    
+    if len(all_nodes) < 50:
+        batch_size = 2
+        n_batches = 20
+    else:
+        batch_size = 8
+        n_batches = 1000
 
     eligible = []
     for t in Tree:
@@ -327,28 +354,34 @@ def iterate(Tree, batch_size, n_batches, depth):
         scores += s
         embeddings += [e.embedding] * len(s)
         if not e.embedding:
+            print(e.identifier)
+            print(e.parent)
+            print("no embedding")
             return "ERROR"
         eligibles += [e] * len(s)
     chooser = qEI(embeddings)
     y_best = chooser.fit(scores)
     chooser.create_batches(n_batches, batch_size)
     next_batch = chooser.get_best_batch()
-    print(next_batch) 
+    print('Next batch', next_batch) 
     start = datetime.now()
     result = []
     with ThreadPoolExecutor(max_workers=batch_size) as executor:
         futures = [executor.submit(expand, eligibles[node_id], node_id, depth) for node_id in next_batch]    
         for future in futures:
             result.append(future.result() )
-            
-    return (datetime.now() - start).seconds
+
+ #   client.put_object(Body=pickle.dumps(Tree),
+ #                     Bucket=bucket, Key=key_path)
+
+    return Tree, (datetime.now() - start).seconds
 
 
-def get_all(t):
-    all_nodes = [t]
-    for c in t.children:
-        all_nodes += get_all(c)
-    return all_nodes
+#def get_all(t):
+#    all_nodes = [t]
+#    for c in t.children:
+#        all_nodes += get_all(c)
+#    return all_nodes
 
 
 

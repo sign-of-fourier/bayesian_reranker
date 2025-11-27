@@ -132,7 +132,9 @@ class best_batch_finder:
             if gpu:
                 url = f'http://34.130.49.1:5000/gpu_qei?y_best={self.y_best}&n={self.batch_size}'
             else:
-                url = f'https://boaz.onrender.com/qei'
+                print('calling')
+                #url = f'https://boaz.onrender.com/qei'
+                url = 'http://3.132.240.115:8000/qei'
             data = {'k': ';'.join(self.batch_mu),
                     'sigma': '|'.join(self.batch_sigma)}
             headers = {
@@ -154,8 +156,6 @@ class best_batch_finder:
                 best_idx = i
         return best_idx
             
-
-
 
 
 

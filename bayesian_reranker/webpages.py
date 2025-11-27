@@ -310,13 +310,39 @@ img {
 """
 
 script = """<script>
-document.getElementById('reranker').addEventListener('submit', function(event) {
+document.getElementById('form').addEventListener('submit', function(event) {
   document.getElementById('submit').disabled = true;
   document.getElementById('submit').textContent = 'Submitting...';
   submit();
   //event.preventDefault();
   //form.submit();
 });
+
+
+document.getElementById('form').addEventListener('submit', function(event) {
+  document.getElementById('write').disabled = true;
+  document.getElementById('write').textContent = 'Submitting...';
+  document.getElementById('starter').value = 'write';
+  submit();
+  //event.preventDefault();
+  //form.submit();
+});
+
+
+document.getElementById('form').addEventListener('submit', function(event) {
+  document.getElementById('rewrite').disabled = true;
+  document.getElementById('rewrite').textContent = 'Submitting...';
+  document.getElementById('starter').value = 'write';
+
+  submit();
+  //event.preventDefault();
+  //form.submit();
+});
+
+
+
+
+
 </script>
 
 """
@@ -343,8 +369,46 @@ chooser = """
 
 
 
+geomcts_iterate = """<html>
+{}
+<body>
+{}
 
+<form id="form" action="/geomcts_iterate" method=POST>
 
+<div class="column left">
+{}
+<input type="submit" id="submit" name="iterate" value="iterate"></input>
+
+</div>
+<div class="column middle">
+<table>
+    <tr>
+        <td>
+            Query
+        </td>
+        <td>
+            {} 
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Initial random answer
+        </td>
+        <td>
+            {}
+        </td>
+        </form>
+    </tr>
+</table>
+</form>
+</div>
+<div class="column right">
+</div>
+<div class="column right"></div>
+{}
+</html>
+"""
 
 geomcts_home="""<html>
 {}
@@ -360,17 +424,18 @@ geomcts_home="""<html>
         </tr>
         <tr><td colspan=2> &nbsp; </td></tr>
         <tr>
-            <td colspan=2><form id="geomcts" action="/initialize_drafts" method=POST>
+            <td colspan=2><form id="form" action="/initialize_drafts" method=POST>
                  <textarea name=topic rows=3 cols=80>Describe the athletic differences between football and baseball.</textarea>
             </td>
         </tr>
         <tr>
             <td colspace=2>
+                <input type=hidden id=starter name=starter value=None>
             </td>
         </tr>
         <tr>
             <td>
-                <input id="Rewrite" type="submit" name="write" value="Write"></input>
+                <input type="submit" id="write" name="rewrite" value="Write"></input>
             </td>
             <td>
             </td>
@@ -381,7 +446,7 @@ geomcts_home="""<html>
             </td>
         <tr>
             <td>
-                <input id="Rewrite" type="submit" name="write" value="Rewrite"></input>
+                <input type="submit" id="rewrite" name="rewrite" value="Rewrite"></input>
             </td>
             <td>
             </td>
@@ -438,7 +503,7 @@ geomcts_home="""<html>
 
 """
 
-geomcts_iterate = """
+check_status = """
 {}
 <body>
 {}
@@ -446,8 +511,7 @@ geomcts_iterate = """
 <div class="column left">{}</div>
 <div class="column middle">
 <table>
-    <form id="geomcts" action="/geo_mcts" method=POST>
-    
+    <form id="geomcts" action="/check_status" method=POST>
     {}
     <tr><td colspan=2>
     {}
@@ -459,6 +523,12 @@ geomcts_iterate = """
 {}
 <div class = "column right"></div>
 """
+
+
+
+
+
+
 
 
 home="""
